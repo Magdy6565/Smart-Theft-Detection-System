@@ -5,33 +5,28 @@ from .forms import VideoForm
 from .models import Video
 from transformers import VivitForVideoClassification, VivitImageProcessor
 import torch
-
+from django.views.decorators.csrf import csrf_exempt
+import cv2
+import numpy as np
+import torch
+from transformers import VivitImageProcessor
+# ----------------------------------------------------------------------------- #
 # Load the model and processor
 processor = VivitImageProcessor.from_pretrained("yehiawp4/ViViT-b-16x2-ShopLifting-Dataset")
 model = VivitForVideoClassification.from_pretrained("yehiawp4/ViViT-b-16x2-ShopLifting-Dataset")
+# ----------------------------------------------------------------------------- #
 
 def home(request):
     print("Hello I am inside Home")
     return render(request, 'my_app/home.html')
+# ----------------------------------------------------------------------------- #
 
 def upload_video(request):
     print("Hello I am inside upload video")
     form = VideoForm()
     return render(request, 'my_app/upload.html', {'form': form})
 
-
-
-# Load the model and processor
-processor = VivitImageProcessor.from_pretrained("yehiawp4/ViViT-b-16x2-ShopLifting-Dataset")
-model = VivitForVideoClassification.from_pretrained("yehiawp4/ViViT-b-16x2-ShopLifting-Dataset")
-import cv2
-import numpy as np
-import torch
-from transformers import VivitImageProcessor
-
-# Load the processor
-processor = VivitImageProcessor.from_pretrained("yehiawp4/ViViT-b-16x2-ShopLifting-Dataset")
-
+# ----------------------------------------------------------------------------- #
 
 def load_video_as_tensor(video_path, target_size=(224, 224), max_frames=32):
     """Load video and convert it to a tensor of shape (num_frames, num_channels, height, width)."""
@@ -61,13 +56,10 @@ def load_video_as_tensor(video_path, target_size=(224, 224), max_frames=32):
     # Add a batch dimension at the start
     video_tensor = video_tensor.unsqueeze(0)  # Now shape is (1, num_frames, 3, height, width)
 
-    # # Ensure the tensor is the correct shape
-    # if video_tensor.shape[1] != 16:  # Check if it has 16 frames
-    #     # Padding with zeros if there are fewer frames
-    #     padding = torch.zeros(1, 16 - video_tensor.shape[1], 3, 224, 224)  # Shape: (1, 16 - num_frames, 3, 224, 224)
-    #     video_tensor = torch.cat((video_tensor, padding), dim=1)  # Concatenate along the frame dimension
-
     return video_tensor  # Return tensor of shape (1, 16, 3, height, width)
+
+# ----------------------------------------------------------------------------- #
+
 def run_inference(model, video_tensor):
     """Utility to run inference given a model and test video tensor."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -81,8 +73,8 @@ def run_inference(model, video_tensor):
 
     return logits
 
+# ----------------------------------------------------------------------------- #
 
-from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt  # Disable CSRF protection for this view
 def detect_theft(request):
     result = None
@@ -114,30 +106,3 @@ def detect_theft(request):
                 result = "No Theft Detected"
 
     return render(request, 'my_app/result.html', {'result': result})
-
-
-# def home(request):
-#     return render(request, 'my_app/home.html')
-
-# def upload_video(request):
-#     form = VideoForm()
-#     return render(request, 'my_app/upload.html', {'form': form})
-
-# from django.views.decorators.csrf import csrf_exempt
-
-# @csrf_exempt  # Disable CSRF protection for this view
-# def detect_theft(request):
-#     if request.method == 'POST':
-#         print("kosomen omk")
-#         form = VideoForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             form.save()
-#             return render(request, 'my_app/result.html', {'result': "Hello World"})
-#         else:
-#             print("Form errors:", form.errors)
-#             return render(request, 'my_app/upload.html', {'form': form, 'error': "Form submission error."})
-#     else:
-#         form = VideoForm()
-    
-#     return render(request, 'my_app/upload.html', {'form': form})
-
